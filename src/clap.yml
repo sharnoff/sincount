@@ -1,0 +1,18 @@
+name: sincounter
+version: "0.1"
+author: Max sharnoff <sincounter@max.sharnoff.org>
+about: Counts the occurances of lines in stdin
+
+args:
+    - FILE:
+        help: Sets the file to output to
+        required: true
+        index: 1
+    - delay:
+        short: d
+        long: delay
+        help: Sets the number of milliseconds to wait between syncing the file. Defaults to 10000
+        takes_value: true
+    - no-trim:
+        long: no-trim
+        help: Doesn't trim each line of stdin
