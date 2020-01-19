@@ -20,7 +20,11 @@ my-command-with-predictable-output | sincount --delay 500 foo.json
 # Arguments
 
 - File: A required argument - this is where the counts will be logged.
-- delay: '-d' or '--delay'. Specifies the number of milliseconds to wait
+- delay: '--delay \<TIME\>'. Specifies the number of milliseconds to wait
   between successive syncs of the file.
 - no-trim: '--no-trim'. Does not trim whitespace from reading each line (note
   that this will result in trailing newline characters)
+- start: '--start=\<FILE\>'. Starts the with an existing count json file. Will
+  allow this file to be absent by default, which can be configured with
+  'force-file'
+- force-file: '--force-file'. Requires that the start file exist

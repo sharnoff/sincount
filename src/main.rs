@@ -4,7 +4,7 @@ extern crate serde_json;
 
 use std::{
     collections::HashMap,
-    io,
+    io::{self, Read},
     fs,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
@@ -13,8 +13,32 @@ use std::{
 };
 
 fn write_file(path: &Path, counts: &HashMap<String, usize>) {
-    let file = fs::File::create(path).unwrap();
-    serde_json::to_writer(file, &counts).unwrap();
+    let file = fs::File::create(path)
+        .unwrap_or_else(|e| panic!("Couldn't open file {:?} to write output:\n{}", path, e));
+    serde_json::to_writer(file, &counts)
+        .unwrap_or_else(|e| panic!("Failed to write json to file {:?}:\n{}", path, e))
+}
+
+// Reads the hashmap from the file. Returns None if the file doesn't
+// exist
+fn read_file(path: &Path) -> Option<HashMap<String, usize>> {
+    match fs::File::open(path) {
+        Err(e) => {
+            eprintln!("Failed to open start file: {:?}", e);
+            None
+        },
+        Ok(mut f) => {
+            let mut s = String::new();
+            f.read_to_string(&mut s)
+                .unwrap_or_else(|e| {
+                    panic!("Couldn't read start file {:?}:\n{}", path, e)
+                });
+            Some(serde_json::from_str(&s)
+                 .unwrap_or_else(|e| {
+                     panic!("Failed to deserialize json from start file {:?}:\n{}", path, e)
+                 }))
+        }
+    }
 }
 
 fn main() {
@@ -32,10 +56,28 @@ fn main() {
         .parse::<u64>()
         .expect("Delay argument must be an integer");
 
+    let start = matches
+        .value_of("start")
+        .map(PathBuf::from);
+
+    let force_file = matches.is_present("force-file");
+
     let trim = !matches.is_present("no-trim");
 
+    let previous_state = match start {
+        None => HashMap::new(),
+        Some(path) => {
+            let m = read_file(&path);
+            if force_file {
+                m.unwrap_or_else(|| panic!("Couldn't find start file {:?}", path))
+            } else {
+                m.unwrap_or_else(|| HashMap::new())
+            }
+        }
+    };
+
     // records counts, whether it's changed
-    let counts: Arc<Mutex<(HashMap<String, usize>, bool)>> = Arc::new(Mutex::new((HashMap::new(), true)));
+    let counts: Arc<Mutex<(HashMap<String, usize>, bool)>> = Arc::new(Mutex::new((previous_state, true)));
 
     let counts_cloned = counts.clone();
     thread::spawn(move || {
@@ -57,7 +99,7 @@ fn main() {
     let mut buf = String::new();
 
     loop {
-        stdin.read_line(&mut buf).unwrap();
+        stdin.read_line(&mut buf).expect("Failed to read stdin");
 
         if trim {
             buf.truncate(buf.trim_end().len());
