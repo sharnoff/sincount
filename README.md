@@ -28,3 +28,4 @@ my-command-with-predictable-output | sincount --delay 500 foo.json
   allow this file to be absent by default, which can be configured with
   'force-file'
 - force-file: '--force-file'. Requires that the start file exist
+- filter-dups: '--filter-dups'. Does not count repeated inputs

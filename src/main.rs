@@ -61,8 +61,8 @@ fn main() {
         .map(PathBuf::from);
 
     let force_file = matches.is_present("force-file");
-
     let trim = !matches.is_present("no-trim");
+    let filter_dups = matches.is_present("filter-dups");
 
     let previous_state = match start {
         None => HashMap::new(),
@@ -97,6 +97,8 @@ fn main() {
 
     let stdin = io::stdin();
     let mut buf = String::new();
+    let mut prev_inp = String::new();
+    let mut is_first = true;
 
     loop {
         stdin.read_line(&mut buf).expect("Failed to read stdin");
@@ -105,23 +107,32 @@ fn main() {
             buf.truncate(buf.trim_end().len());
         }
 
-        let mut counts_guard = counts.lock().unwrap();
-        let map = &mut counts_guard.0;
+        // check that we *should* add to the count
+        if !filter_dups || (buf != prev_inp || is_first) {
+            let mut counts_guard = counts.lock().unwrap();
+            let map = &mut counts_guard.0;
 
-        let current_count_mut = match map.get_mut(&buf) {
-            Some(c) => c,
-            None => {
-                map.insert(buf.clone(), 0);
-                map.get_mut(&buf).unwrap()
-            },
-        };
+            let current_count_mut = match map.get_mut(&buf) {
+                Some(c) => c,
+                None => {
+                    map.insert(buf.clone(), 0);
+                    map.get_mut(&buf).unwrap()
+                },
+            };
 
-        *current_count_mut += 1;
+            *current_count_mut += 1;
 
-        counts_guard.1 = true;
-        drop(counts_guard);
+            counts_guard.1 = true;
+            drop(counts_guard);
+        }
+
+        if filter_dups {
+            prev_inp.truncate(0);
+            prev_inp.push_str(&buf);
+        }
         
-        // TODO: Add options for reallocating the buffer if it gets out of hand
         buf.truncate(0);
+
+        is_first = false;
     }
 }

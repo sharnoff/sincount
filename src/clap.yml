@@ -9,13 +9,16 @@ args:
         required: true
         index: 1
     - delay:
+        short: d
         long: delay
         help: Sets the number of milliseconds to wait between syncing the file. Defaults to 10000
         takes_value: true
     - no-trim:
+        short: n
         long: no-trim
         help: Doesn't trim each line of stdin
     - start:
+        short: s
         long: start
         help: Gives a json file to start from. Will allow this file to absent by
               default. To change this, use '--force-file'
@@ -25,3 +28,7 @@ args:
         help: If the json file to start from is not present, this will cause a
               failure. The default behavior is to continue without using the
               file.
+    - filter-dups:
+        short: f
+        long: filter-duplicates
+        help: Does not increment the counter for repeated lines
